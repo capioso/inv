@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitación - Coraline</title>
+    <style>
+        /* --- RESET Y FONDO --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', monospace;
+            overflow-x: hidden;
+            overflow-y: auto;
+            padding: 1.5rem 1rem;
+        }
+        /* Contenedor principal: se ajusta al contenido, sin altura fija */
+        .container {
+            width: 800px;
+            max-width: 96vw;
+            min-height: min(420px, 70vh);
+            background: #16213e;
+            border: 8px solid #6b4f3c;
+            border-radius: 32px;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.8), inset 0 0 30px #0f3460;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+        /* Escenario para la llave */
+        .scene-3d {
+            width: clamp(130px, 40vw, 200px);
+            height: clamp(130px, 40vw, 200px);
+            perspective: 600px;
+            position: relative;
+            z-index: 10;
+            cursor: pointer;
+            transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .key-3d {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1.5s ease-in-out;
+            transform: rotateY(0deg) rotateX(0deg);
+        }
+        /* Frente y dorso */
+        .key-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .key-front {
+            transform: rotateY(0deg);
+        }
+        .key-back {
+            transform: rotateY(180deg);
+        }
+        .key-face svg {
+            width: clamp(110px, 30vw, 160px);
+            height: clamp(110px, 30vw, 160px);
+            filter: drop-shadow(0 0 15px #f5c842);
+        }
+
+        /* --- Canvas (cerrojo) --- */
+        #lockCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        /* --- Invitación --- */
+        .invitation {
+            position: relative;
+            width: 100%;
+            padding: clamp(1.5rem, 5vw, 3rem);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(22, 33, 62, 0.95);
+            backdrop-filter: blur(8px);
+            color: #f0e6d3;
+            text-align: center;
+            z-index: 30;
+            border-radius: 24px;
+            animation: fadeIn 1.2s ease forwards;
+        }
+        .invitation h1 {
+            font-size: clamp(1.8rem, 6vw, 3.5rem);
+            font-weight: bold;
+            color: #f5c842;
+            text-shadow: 0 0 20px #f5c84255;
+            letter-spacing: clamp(2px, 1vw, 6px);
+            margin-bottom: 0.5rem;
+        }
+        .invitation h2 {
+            font-size: clamp(1.1rem, 3.2vw, 1.8rem);
+            color: #b8a07c;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #f5c84255;
+            padding-bottom: 0.5rem;
+        }
+        .invitation p {
+            font-size: clamp(0.9rem, 2.6vw, 1.2rem);
+            max-width: min(400px, 90%);
+            line-height: 1.8;
+            margin: 0.6rem 0;
+        }
+        .invitation .detail {
+            background: #0f3460;
+            padding: clamp(0.6rem, 2vw, 0.8rem) clamp(1.2rem, 4vw, 2rem);
+            border-radius: 60px;
+            border: 1px solid #f5c84288;
+            margin-top: 1.5rem;
+            font-size: clamp(1rem, 3.2vw, 1.6rem);
+            color: #f5c842;
+        }
+        .invitation .detail-link {
+            text-decoration: none;
+            display: inline-block;
+        }
+        .invitation .important {
+            margin-top: 1.8rem;
+            max-width: min(420px, 92%);
+            background: rgba(15, 52, 96, 0.5);
+            border: 1px dashed #f5c84266;
+            border-radius: 16px;
+            padding: clamp(0.8rem, 2.5vw, 1rem) clamp(1rem, 3vw, 1.4rem);
+        }
+        .invitation .important h3 {
+            color: #f5c842;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+        }
+        .invitation .important p {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin: 0;
+            opacity: 0.9;
+        }
+        .invitation .btn-rsvp {
+            margin-top: clamp(1.4rem, 4vw, 2.2rem);
+            padding: clamp(0.7rem, 2vw, 0.8rem) clamp(2rem, 6vw, 3rem);
+            background: #f5c842;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 60px;
+            font-size: clamp(1rem, 3vw, 1.4rem);
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 0 30px #f5c84255;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .invitation .btn-rsvp:hover {
+            transform: scale(1.05);
+            background: #ffd966;
+            box-shadow: 0 0 50px #f5c842aa;
+        }
+        .hint {
+            position: absolute;
+            bottom: 20px;
+            z-index: 40;
+            color: #b8a07c88;
+            font-size: 0.9rem;
+            background: #0f346088;
+            padding: 6px 18px;
+            border-radius: 30px;
+            backdrop-filter: blur(4px);
+            border: 1px solid #f5c84233;
+            cursor: pointer;
+            transition: 0.3s;
+            display: none;
+        }
+        .hint:hover {
+            background: #f5c84233;
+            color: #f5c842;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        @media (max-width: 600px) {
+            .container { border-width: 5px; border-radius: 20px; min-height: min(360px, 65vh); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="mainContainer">
+    <!-- ESCENA 3D: LLAVE -->
+    <div class="scene-3d" id="scene3d">
+        <div class="key-3d" id="key3d">
+            <!-- CARA FRONTAL: Tu SVG de la llave restaurado con color de relleno -->
+            <div class="key-face key-front">
+                <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                     viewBox="0 0 1000 1000" style="enable-background:new 0 0 1000 1000;" xml:space="preserve">
+                <g fill="#f5c842">
+                    <path d="M671.59,551.92c-52.55,0-95.31,42.75-95.31,95.31s42.75,95.31,95.31,95.31s95.31-42.75,95.31-95.31
+                        S724.15,551.92,671.59,551.92z M655.89,694.76c-7.54,7.54-19.75,7.54-27.29,0c-7.54-7.54-7.54-19.75,0-27.29
+                        c7.54-7.54,19.75-7.54,27.29,0C663.42,675.01,663.42,687.23,655.89,694.76z M655.89,630.85c-7.54,7.54-19.75,7.54-27.29,0
+                        c-7.54-7.54-7.54-19.75,0-27.29c7.54-7.54,19.75-7.54,27.29,0C663.42,611.1,663.42,623.32,655.89,630.85z M692.51,603.56
+                        c7.54-7.54,19.75-7.54,27.29,0c7.54,7.54,7.54,19.75,0,27.29c-7.54,7.54-19.75,7.54-27.29,0
+                        C684.98,623.32,684.98,611.1,692.51,603.56z M719.8,694.76c-7.54,7.54-19.75,7.54-27.29,0c-7.54-7.54-7.54-19.75,0-27.29
+                        c7.54-7.54,19.75-7.54,27.29,0C727.33,675.01,727.33,687.23,719.8,694.76z"/>
+                    <path d="M759.13,561.87c-33.91-34.95-83.6-44.97-126.56-30.06c-16.23,5.63-34.24,1.74-46.39-10.41v0
+                        c-0.84-8.71-4.92-17.17-12.23-23.42c-4.94-4.23-10.82-6.85-16.92-7.88c-15.15-2.55-29.28-9.29-40.14-20.15L284.48,237.53
+                        c-5.57-5.57-14.63-6.08-20.45-0.78c-6.21,5.66-6.39,15.29-0.51,21.16l0.05,0.05l-2.44,2.44c-5.26,5.26-5.26,13.79,0,19.05
+                        l8.41,8.41c7.13,7.13,6.93,18.83-0.62,25.71c-7.07,6.44-18.09,5.83-24.86-0.94l-8.06-8.06c-5.26-5.26-13.79-5.25-19.05,0
+                        l-6.09,6.09c-5.26,5.26-5.26,13.79,0,19.05l9.01,9.01c6.89,6.89,18.06,6.89,24.95,0l0,0c6.94-6.94,18.18-6.94,25.12,0
+                        c6.94,6.94,6.94,18.19,0,25.14c-6.89,6.89-6.89,18.05,0,24.93l9.01,9.01c5.26,5.26,13.8,5.26,19.06,0l6.08-6.08
+                        c5.25-5.25,5.26-13.78,0-19.05l-8.41-8.41c-7.14-7.14-6.93-18.85,0.63-25.72c7.08-6.43,18.1-5.81,24.86,0.96l8.05,8.05
+                        c5.26,5.26,13.79,5.26,19.04,0l2.44-2.44l138.84,138.84c13.59,13.59,22.69,30.83,27.35,49.47c1.5,5.98,4.58,11.65,9.26,16.33
+                        c6.01,6.01,13.66,9.4,21.51,10.16v0c11.98,11.98,16.27,29.79,10.63,45.77c-15.03,42.55-5.53,91.83,28.51,125.86
+                        c46.97,46.97,122.99,47.22,170.26,0.73C804.25,685.87,805.2,609.36,759.13,561.87z M671.59,750.2
+                        c-56.78,0-102.98-46.2-102.98-102.98s46.2-102.98,102.98-102.98s102.98,46.2,102.98,102.98S728.38,750.2,671.59,750.2z"/>
+                </g>
+                </svg>
+            </div>
+            <!-- CARA TRASERA: También el mismo SVG para un giro idéntico -->
+            <div class="key-face key-back">
+                <svg version="1.1" viewBox="0 0 1000 1000" style="transform: scaleX(-1);">
+                    <g fill="#f5c842">
+                        <path d="M671.59,551.92c-52.55,0-95.31,42.75-95.31,95.31s42.75,95.31,95.31,95.31s95.31-42.75,95.31-95.31
+                        S724.15,551.92,671.59,551.92z M655.89,694.76c-7.54,7.54-19.75,7.54-27.29,0c-7.54-7.54-7.54-19.75,0-27.29
+                        c7.54-7.54,19.75-7.54,27.29,0C663.42,675.01,663.42,687.23,655.89,694.76z M655.89,630.85c-7.54,7.54-19.75,7.54-27.29,0
+                        c-7.54-7.54-7.54-19.75,0-27.29c7.54-7.54,19.75-7.54,27.29,0C663.42,611.1,663.42,623.32,655.89,630.85z M692.51,603.56
+                        c7.54-7.54,19.75-7.54,27.29,0c7.54,7.54,7.54,19.75,0,27.29c-7.54,7.54-19.75,7.54-27.29,0
+                        C684.98,623.32,684.98,611.1,692.51,603.56z M719.8,694.76c-7.54,7.54-19.75,7.54-27.29,0c-7.54-7.54-7.54-19.75,0-27.29
+                        c7.54-7.54,19.75-7.54,27.29,0C727.33,675.01,727.33,687.23,719.8,694.76z"/>
+                        <path d="M759.13,561.87c-33.91-34.95-83.6-44.97-126.56-30.06c-16.23,5.63-34.24,1.74-46.39-10.41v0
+                        c-0.84-8.71-4.92-17.17-12.23-23.42c-4.94-4.23-10.82-6.85-16.92-7.88c-15.15-2.55-29.28-9.29-40.14-20.15L284.48,237.53
+                        c-5.57-5.57-14.63-6.08-20.45-0.78c-6.21,5.66-6.39,15.29-0.51,21.16l0.05,0.05l-2.44,2.44c-5.26,5.26-5.26,13.79,0,19.05
+                        l8.41,8.41c7.13,7.13,6.93,18.83-0.62,25.71c-7.07,6.44-18.09,5.83-24.86-0.94l-8.06-8.06c-5.26-5.26-13.79-5.25-19.05,0
+                        l-6.09,6.09c-5.26,5.26-5.26,13.79,0,19.05l9.01,9.01c6.89,6.89,18.06,6.89,24.95,0l0,0c6.94-6.94,18.18-6.94,25.12,0
+                        c6.94,6.94,6.94,18.19,0,25.14c-6.89,6.89-6.89,18.05,0,24.93l9.01,9.01c5.26,5.26,13.8,5.26,19.06,0l6.08-6.08
+                        c5.25-5.25,5.26-13.78,0-19.05l-8.41-8.41c-7.14-7.14-6.93-18.85,0.63-25.72c7.08-6.43,18.1-5.81,24.86,0.96l8.05,8.05
+                        c5.26,5.26,13.79,5.26,19.04,0l2.44-2.44l138.84,138.84c13.59,13.59,22.69,30.83,27.35,49.47c1.5,5.98,4.58,11.65,9.26,16.33
+                        c6.01,6.01,13.66,9.4,21.51,10.16v0c11.98,11.98,16.27,29.79,10.63,45.77c-15.03,42.55-5.53,91.83,28.51,125.86
+                        c46.97,46.97,122.99,47.22,170.26,0.73C804.25,685.87,805.2,609.36,759.13,561.87z M671.59,750.2
+                        c-56.78,0-102.98-46.2-102.98-102.98s46.2-102.98,102.98-102.98s102.98,46.2,102.98,102.98S728.38,750.2,671.59,750.2z"/>
+                    </g>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- CANVAS para animación del cerrojo -->
+    <canvas id="lockCanvas"></canvas>
+
+    <!-- INVITACIÓN FINAL -->
+    <div class="invitation" id="invitation">
+        <h1>✦ CORALINE ✦</h1>
+        <h2>¡Has encontrado la llave!</h2>
+        <p>Te esperamos en el <strong>Otro Mundo</strong> para celebrar el cumpleaños</p>
+        <p>de <strong style="color:#f5c842;">Carmen Paola</strong></p>
+        <div class="detail">📅 Jueves 16 de Julio · 15:00</div>
+
+        <a class="detail detail-link" style="font-size:1rem; background:transparent; border-color:#b8a07c55;"
+           href="https://maps.app.goo.gl/awszKHDPQhef8nNh8" target="_blank" rel="noopener">📍 Ver ubicación</a>
+
+        <div class="important">
+            <h3>✨ IMPORTANTE SABER</h3>
+            <p>Ven con hambre ... de Coraline. ¡Y no olvides traer un regalo!</p>
+        </div>
+
+        <a class="btn-rsvp" href="https://docs.google.com/forms/d/e/1FAIpQLSfTU48v-tCIoadbClgLIiywMw4KFT9d9s9okh4lWQU5TSgkpw/viewform?usp=publish-editor" target="_blank" rel="noopener">🔮 Confirmar asistencia</a>
+        <p style="margin-top:1.5rem; font-size:0.8rem; opacity:0.5;">No olvides traer tu llave.</p>
+    </div>
+
+    <div class="hint" id="hintBtn">🔑 Abrir cerrojo</div>
+</div>
+
+<script>
+    (function() {
+        "use strict";
+
+        const container = document.getElementById('mainContainer');
+        const scene3d = document.getElementById('scene3d');
+        const key3d = document.getElementById('key3d');
+        const canvas = document.getElementById('lockCanvas');
+        const ctx = canvas.getContext('2d');
+        const invitation = document.getElementById('invitation');
+        const hintBtn = document.getElementById('hintBtn');
+
+        let phase = 0; // 0: inicio, 1: animando llave, 2: cerrojo, 3: invitación
+        let isAnimating = false;
+        let progress = 0;
+
+        function resizeCanvas() {
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            if (phase === 2) drawLock(progress);
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // helper para roundRect (seguro contra navegadores antiguos)
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+                if (r > w/2) r = w/2;
+                if (r > h/2) r = h/2;
+                this.beginPath();
+                this.moveTo(x + r, y);
+                this.arcTo(x + w, y, x + w, y + h, r);
+                this.arcTo(x + w, y + h, x, y + h, r);
+                this.arcTo(x, y + h, x, y, r);
+                this.arcTo(x, y, x + w, y, r);
+                this.closePath();
+                return this;
+            };
+        }
+
+        function drawLock(t) {
+            const w = canvas.width;
+            const h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+
+            const cx = w / 2;
+            const cy = h / 2;
+            const size = Math.min(w, h) * 0.25;
+
+            ctx.save();
+            ctx.shadowColor = '#f5c84288';
+            ctx.shadowBlur = 30;
+
+            // Cuerpo del cerrojo
+            const rx = cx - size * 0.6;
+            const ry = cy - size * 0.8;
+            const rw = size * 1.2;
+            const rh = size * 1.6;
+            ctx.beginPath();
+            ctx.roundRect(rx, ry, rw, rh, 12);
+            ctx.fillStyle = '#2a2a4a';
+            ctx.fill();
+            ctx.strokeStyle = '#f5c842';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Ojo del cerrojo
+            const eyeX = cx;
+            const eyeY = cy - size * 0.1;
+            const eyeR = size * 0.35;
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY, eyeR, 0, Math.PI * 2);
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fill();
+            ctx.strokeStyle = '#f5c842';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Ranura del ojo
+            ctx.save();
+            ctx.translate(eyeX, eyeY);
+            ctx.rotate(t * 1.5); // Giro dinámico
+            ctx.strokeStyle = '#f5c842';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-eyeR * 0.3, -eyeR * 0.3);
+            ctx.lineTo(eyeR * 0.3, -eyeR * 0.3);
+            ctx.lineTo(eyeR * 0.3, eyeR * 0.3);
+            ctx.stroke();
+            ctx.restore();
+
+            // Pestillo
+            const barY = cy + size * 0.3 + (1 - t) * size * 0.4;
+            ctx.beginPath();
+            ctx.roundRect(cx - size * 0.25, barY, size * 0.5, size * 0.2, 6);
+            ctx.fillStyle = '#f5c842';
+            ctx.shadowBlur = 40;
+            ctx.shadowColor = '#f5c842';
+            ctx.fill();
+
+            // Destellos
+            if (t > 0.6) {
+                const intensity = (t - 0.6) / 0.4;
+                for (let i = 0; i < 10; i++) {
+                    const angle = i * 1.2 + t * 3;
+                    const dist = size * 0.3 + intensity * size * 0.5;
+                    const px = cx + Math.cos(angle + t * 2) * dist;
+                    const py = cy + Math.sin(angle * 0.7 + t * 1.5) * dist * 0.6;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 2 + intensity * 6, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(245, 200, 66, ${0.3 + intensity * 0.7})`;
+                    ctx.shadowBlur = 20;
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+
+            // Texto dinámico
+            if (t > 0.1 && t < 0.9) {
+                ctx.save();
+                ctx.font = 'bold 18px "Courier New", monospace';
+                ctx.fillStyle = `rgba(245, 200, 66, ${0.5 + Math.sin(t * 20) * 0.3})`;
+                ctx.textAlign = 'center';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#f5c842';
+                ctx.fillText('⟳ GIRANDO LLAVE', cx, cy - size * 1.2);
+                ctx.restore();
+            }
+
+            if (t >= 1) {
+                ctx.save();
+                ctx.font = 'bold 32px "Courier New", monospace';
+                ctx.fillStyle = '#f5c842';
+                ctx.shadowBlur = 50;
+                ctx.shadowColor = '#f5c842';
+                ctx.textAlign = 'center';
+                ctx.fillText('✦ ABIERTO ✦', cx, cy + size * 1.4);
+                ctx.restore();
+            }
+        }
+
+        function startOpening() {
+            phase = 2;
+
+            // Suavizar la desaparición de la llave
+            scene3d.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            scene3d.style.opacity = '0';
+            scene3d.style.transform = 'translateY(30px) scale(0.1)';
+
+            // Inicializar canvas
+            canvas.style.display = 'block';
+            resizeCanvas();
+
+            progress = 0;
+            const duration = 2500; // ms de animación
+            const startTime = performance.now();
+
+            function animateLock(time) {
+                const elapsed = time - startTime;
+                progress = Math.min(elapsed / duration, 1);
+                drawLock(progress);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateLock);
+                } else {
+                    // Finalizar y mostrar invitación
+                    setTimeout(() => {
+                        phase = 3;
+                        isAnimating = false;
+                        canvas.style.transition = 'opacity 0.5s ease';
+                        canvas.style.opacity = '0';
+
+                        setTimeout(() => {
+                            canvas.style.display = 'none';
+                            scene3d.style.display = 'none';
+                            hintBtn.style.display = 'none';
+                            invitation.style.display = 'flex';
+                        }, 500);
+                    }, 500);
+                }
+            }
+            requestAnimationFrame(animateLock);
+        }
+
+        function startSequence() {
+            if (isAnimating || phase > 0) return;
+            isAnimating = true;
+            phase = 1;
+
+            // Paso 1: Rotar llave 180 grados
+            key3d.style.transform = 'rotateY(180deg)';
+
+            // Detectar el fin de la rotación 3D de forma segura
+            key3d.addEventListener('transitionend', function step1Done() {
+                key3d.removeEventListener('transitionend', step1Done);
+
+                // Paso 2: Acercar/Encajar la llave al centro de la puerta
+                scene3d.style.transition = 'transform 1s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                scene3d.style.transform = 'translateY(30px) scale(0.5)';
+
+                scene3d.addEventListener('transitionend', function step2Done() {
+                    scene3d.removeEventListener('transitionend', step2Done);
+
+                    // Paso 3: Iniciar animación del Canvas
+                    startOpening();
+                }, { once: true });
+            }, { once: true });
+        }
+
+        // Eventos
+        scene3d.addEventListener('click', startSequence);
+        hintBtn.addEventListener('click', startSequence);
+
+        // Efecto de movimiento sutil al inicio
+        setTimeout(() => {
+            if (phase === 0) {
+                key3d.style.transition = 'transform 1.5s ease-in-out';
+                key3d.style.transform = 'rotateY(15deg) rotateX(10deg)';
+                setTimeout(() => {
+                    if (phase === 0) key3d.style.transform = 'rotateY(0deg) rotateX(0deg)';
+                }, 1500);
+            }
+        }, 800);
+
+        // Mostrar el botón de ayuda si tarda en interactuar
+        setTimeout(() => {
+            if (phase === 0) {
+                hintBtn.style.display = 'block';
+            }
+        }, 4000);
+
+        window.addEventListener('load', resizeCanvas);
+    })();
+</script>
+</body>
+</html>
